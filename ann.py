@@ -11,9 +11,9 @@ import numpy as np
 import pandas as pd
 import random as rd
 
-def readFile(Filename):
-    nNodes = pd.read_csv(Filename, header=None, delim_whitespace=True, nrows=2)
-    dataset = pd.read_csv(Filename, skiprows=[0, 1], header=None, delim_whitespace=True)
+def readFile(fileName):
+    nNodes = pd.read_csv(fileName, header=None, delim_whitespace=True, nrows=2)
+    dataset = pd.read_csv(fileName, skiprows=[0, 1], header=None, delim_whitespace=True)
     m, l, n, k = int(nNodes[0][0]), int(nNodes[1][0]), int(nNodes[2][0]), int(nNodes[0][1])
     x = dataset.iloc[:,:m]
     y = dataset.iloc[:,m:]
@@ -87,33 +87,13 @@ def MSE(predOut, y):
       mse += ((y[i] - predOut[i]) ** 2 ) * (1.0/2)
     return mse
 
-input, hidden, output, training, x, y = readFile("train.txt")
-x = normalization(x)
-#y = normalization(y)
-x = np.array(x)
-y = np.array(y)
-#print(input, hidden, output, training, x, y)
-
-wH = np.array(randomWeights(input, hidden, output))
-wO = np.array(randomWeights(hidden, output, input))
-#print(wH)
-#print(wO)
-
-#wH = np.array([[.5,-.8],[0.3,0.9]])
-#wO = np.array([[1.1,-.9],[.8,-1.0]])
-#x = np.array([1,3])
-#hiddenout, out = feedForward(wH,wO,2,2,x)
-#print(hiddenout, out)
-#MSE(out, [0])
-
-#deltaOutput, deltaHidden = backProbagation(hiddenout, out, [.9,.1], wH, wO)
-#print(deltaOutput, deltaHidden)
-
-#wO, wH =updataWeights(.5, wO,wH,x,deltaOutput, deltaHidden, hiddenout, out)
-#print(wO, wH)
-
-#hiddenout, out = feedForward(wH,wO,2,2,x)
-#print(hiddenout, out)
+def writeToFile(fileName, w, row, col):
+    file = open(fileName, "w")
+    for i in range(row):
+      for j in range(col):
+          file.write(str(w[i][j]) + " ")
+      file.write('\n')
+    file.close()
 
 def neuralNetwrok(input, hidden, output, training, x, y, wO, wH, alpha, iterations):
     newY = []
@@ -124,6 +104,38 @@ def neuralNetwrok(input, hidden, output, training, x, y, wO, wH, alpha, iteratio
         deltaOutput, deltaHidden = backProbagation(hiddenout, out, y[j], wH, wO)
         wO, wH = updataWeights(alpha, wO, wH, x[j], deltaOutput, deltaHidden, hiddenout, out)
         newY.append(out)
-    print("MSE = ", MSE(newY, y)/training)
+    print("MSE of the first program = ", MSE(newY, y)/training)
+    return wO, wH
 
-neuralNetwrok(input, hidden, output, training, x, y, wO, wH, .5, 500)
+def testing(newWH, newWO, hidden, output, training, x, y):
+    newY = []
+    for j in range(training):
+            hiddenout, out = feedForward(newWH, newWO, hidden, output, x[j])
+            newY.append(out)
+    print("MSE of the second program = ", MSE(newY, y)/training)
+
+def firstProgram(fileName):
+    input, hidden, output, training, x, y = readFile(fileName)
+    x = normalization(x)
+    y = normalization(y)
+    x = np.array(x)
+    y = np.array(y)
+    wH = np.array(randomWeights(input, hidden, output))
+    wO = np.array(randomWeights(hidden, output, input))
+    wO, wH = neuralNetwrok(input, hidden, output, training, x, y, wO, wH, .5, 500)
+    writeToFile("BestwH.txt", wH, hidden, input)
+    writeToFile("BestwO.txt", wO, output, hidden)
+
+def secondProgram(fileName):
+    input, hidden, output, training, x, y = readFile(fileName)
+    x = normalization(x)
+    y = normalization(y)
+    x = np.array(x)
+    y = np.array(y)
+    newWH = np.array(pd.read_csv("BestwH.txt", header=None, delim_whitespace=True))
+    newWO = np.array(pd.read_csv("BestwO.txt", header=None, delim_whitespace=True))
+    testing(newWH, newWO, hidden, output, training, x, y)
+
+firstProgram("train.txt")
+
+secondProgram("train.txt")
